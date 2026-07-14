@@ -2,4 +2,4 @@
 
 ## 调研文档
 
-- [“只做新增、不做修改”的软件架构调研](./append-only-architecture-research.md) — 汇总 append-only、Event Sourcing、CQRS、日志结构存储、Temporal Data、Git、WORM 等模式的原理、案例、权衡与落地建议。
+- [项目代码“只增整删、不做行级修改”的架构调研](./append-only-architecture-research.md) — 研究已有文件内容冻结、只新增或整删文件/模块的迭代约束，覆盖插件发现、版本化替换、外围演进、安全修复和 CI 门禁。
