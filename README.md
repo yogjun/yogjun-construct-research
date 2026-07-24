@@ -7,4 +7,4 @@
 - [AI Agent 开发框架技术选型调研（2026 全景）](./Agent框架选型/ai-agent-framework-selection-research.md) — 以"控制流哲学"（确定性图 / Agent 循环 / 多智能体 / 企业内核）为主轴，横切 8 维能力矩阵，深挖 7 个标杆框架；给出复杂度分级、一票否决、选型决策树、生产参考架构、两阶段 PoC 门禁与 2026 趋势，并覆盖 MCP/A2A/AG-UI 协议与国内模型生态。
 - [Agent 框架分层与选型 QA 总结](./Agent框架选型/Agent框架分层与选型QA总结.md) — 汇总 Agent 循环、L1/L2 分层、LangChain Agent 与 LangGraph 的依赖关系，以及 Spring AI、LangChain4j 和最小 AI 应用方案的边界。
 - [Agent 免中途确认与无人值守执行方案调研](./agent-unattended-execution-research.md) — 区分权限确认、业务澄清和最终审查，比较 Codex、Claude Code、Gemini CLI、OpenHands、Cline、Roo Code、GitHub Copilot cloud agent 与 Aider；给出预授权、自动审查、沙箱、durable execution 和最终 PR 门禁组成的无人值守架构。
-- [ReAct 循环中的预期结果验证设计](./Agent框架选型/ReAct循环中的预期结果验证设计.md) — 将 Agent 的“反思”收敛为带证据的预期结果验证协议，覆盖验证契约、三态判定、Verifier 路由、定向重试、两级验证、循环预算和 Judge 校准。
+- [ReAct Agent 循环验证专题](./Agent框架选型/ReAct预期结果验证/README.md) — 汇总带证据的预期结果验证协议，以及没有对话框时通过异步任务、结构化处理单和通知渠道实现人工介入的交互设计。
