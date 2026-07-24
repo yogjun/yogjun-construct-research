@@ -8,3 +8,4 @@
 - [Agent 框架分层与选型 QA 总结](./Agent框架选型/Agent框架分层与选型QA总结.md) — 汇总 Agent 循环、L1/L2 分层、LangChain Agent 与 LangGraph 的依赖关系，以及 Spring AI、LangChain4j 和最小 AI 应用方案的边界。
 - [Agent 免中途确认与无人值守执行方案调研](./agent-unattended-execution-research.md) — 区分权限确认、业务澄清和最终审查，比较 Codex、Claude Code、Gemini CLI、OpenHands、Cline、Roo Code、GitHub Copilot cloud agent 与 Aider；给出预授权、自动审查、沙箱、durable execution 和最终 PR 门禁组成的无人值守架构。
 - [ReAct Agent 循环验证专题](./Agent框架选型/ReAct预期结果验证/README.md) — 汇总带证据的预期结果验证协议，以及没有对话框时通过异步任务、结构化处理单和通知渠道实现人工介入的交互设计。
+- [Agent Tool 设计专题](./Agent框架选型/Agent%20Tool设计/README.md) — 调研 Agent Tool 的创建方式和运行形态，厘清本地函数、Function Calling、OpenAPI、MCP、模型厂商托管工具、长任务与 Agent-as-Tool 的关系，并给出生产治理和选型建议。
