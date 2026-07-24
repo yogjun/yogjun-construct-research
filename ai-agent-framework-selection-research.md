@@ -1,4 +1,4 @@
-<!-- cSpell:words Agentic AutoGen Bedrock checkpointer CrewAI EvalOps Foundry guardrail handoff LangChain LangGraph LangSmith LlamaIndex Mastra Pydantic Semantic Strands toolset -->
+<!-- cSpell:words Agentic AISDK AutoGen Bedrock Bisheng Brex checkpointer CrewAI dashscope dataclass dataclasses DBOS deepseek deepset Dify Doubao EvalOps Flowise Foundry groundedness guardrail handoff Helidon HITL Inngest interp LangChain Langflow LangGraph LangSmith Letta LlamaIndex Logfire Mastra Micronaut Ollama Pydantic Qingyun Qwen Ragflow Replit Semantic SESS Skyvern Strands toolset UIUC Willison -->
 
 # AI Agent 开发框架技术选型调研（2026 全景）
 
@@ -130,24 +130,28 @@ flowchart LR
 ## 2. 控制流哲学：四类本质分野
 
 ### 2.1 ① 确定性图编排
+
 **假设**：业务流程是可预先描述的状态机；你画节点（函数/子 Agent）与边（含条件路由），LLM 只是某些节点里的计算单元。控制流可预测、可回放、可在任意节点插入人工审批。
 **代价**：流程要你先想清楚；图越复杂维护成本越高；对开放式任务偏重。
 **适用**：复杂多步工作流、强可调试、强合规/人工卡点、需断点续跑与回放的生产管线。
 **代表**：**LangGraph**（状态图 + 检查点，事实标杆）、LlamaIndex Workflows（事件驱动）。
 
 ### 2.2 ② Agent 循环 / Handoff
+
 **假设**：任务足够开放，让模型自己在工具循环里决定下一步。你只提供工具、系统提示、以及"何时移交另一个 Agent"（handoff）。Anthropic 把 Agent 定义为"在环境反馈中使用工具的 LLM 循环"。
 **代价**：控制流不完全确定，调试靠 trace 而非读代码；成本与延迟随循环轮数上升；对强时序场景偏重。
 **适用**：开放式任务、高度 agentic、单 Agent 或少量 Agent 协作、追求开箱即用。
 **代表**：**OpenAI Agents SDK**、**Claude Agent SDK**、**Pydantic AI**、Mastra、Vercel AI SDK（agent 层）。
 
 ### 2.3 ③ 多智能体会话 / 角色分工
+
 **假设**：复杂任务可拆成多个有角色分工的 Agent，对话/委派/投票/辩论共同完成。
 **代价**：**2026 最大的争议区**。Cognition 称其"脆弱"、Anthropic 实测多 Agent 比单对话**多耗 15× token**、UIUC 研究发现 MAS 相对单 Agent 的准确率优势已从 ~10% 跌到 ~3%。
 **适用**：高价值、**可并行、读多写少**的任务（广度优先研究、多视角分析）；**不**适合强依赖、需共享同一上下文、或多数编码任务。
 **代表**：**CrewAI**（角色分工）、AutoGen / AG2（会话式）。
 
 ### 2.4 ④ 企业内核 / 插件式
+
 **假设**：Agent 要嵌入既有企业技术栈（.NET / JVM / Spring / 云厂商），优先工程治理、DI、可观测、合规与多语言，能力以插件装配。
 **代价**：抽象偏工程化，对"快速搭 demo"不如 ② 直接；跟进度不如 Python 激进。
 **适用**：企业级、强集成、多语言、强治理、JVM 或 .NET 技术栈。
@@ -174,22 +178,22 @@ flowchart LR
 > 维度：① 状态/记忆模型 ② 模型无关性（vendor lock-in）③ 多智能体 ④ Human-in-the-loop ⑤ 可观测/评测 ⑥ 语言生态 ⑦ 许可证/背后厂商 ⑧ 生产成熟度。
 > 图例：● 强/原生 ◐ 部分/可配 ○ 弱/需自建。生产成熟度按 2026-07 印象，落地请复核。"持久化"特指运行中断后可恢复，不仅是保存聊天记录。
 
-| 框架 | 哲学 | ①状态/记忆 | ②模型无关 | ③多智能体 | ④HITL | ⑤可观测 | ⑥语言 | ⑦许可/厂商 | ⑧成熟度 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **LangGraph** | ①图 | ● checkpointer/store/interrupt | ● | ● supervisor | ● interrupt/time-travel | ● LangSmith | Py/JS | MIT / LangChain | 高（生产事实标杆） |
-| **OpenAI Agents SDK** | ②循环 | ◐ Sessions + 可序列化 RunState | ◐* 高级特性锁 OpenAI | ● handoff/agent-as-tool | ● RunState 跨进程恢复 | ● 默认上送 OpenAI | Py/JS | MIT / OpenAI | 高（2025-03） |
-| **Claude Agent SDK** | ②循环 | ◐ session/hooks/checkpoint | ○ 锁 Claude | ● subagents | ● 权限模式/hooks | ● OTel | Py/TS | Apache-2.0 / Anthropic | 高（Claude Code 验证） |
-| **Pydantic AI** | ②循环 | ◐ Durable（接 Temporal/DBOS 等） | ● 最广 | ◐ graph | ● 工具审批 | ● Logfire(OTel) | Py | MIT / Pydantic | 高（2025-09 v1.0） |
-| **CrewAI** | ③多智能体 | ◐ Flow state/记忆 | ● | ● 角色 crew | ◐ | ● | Py | MIT(+企业) / CrewAI | 中高 |
-| **AutoGen / AG2** | ③多智能体 | ◐ Redis/记忆 | ● | ● 会话 team | ◐ | ● OTel | Py/.NET | MIT→Apache / 社区 | 中（AutoGen 维护模式→MAF） |
-| **Semantic Kernel** | ④企业 | ◐ 记忆/Process | ● | ◐ Agent | ◐ Process | ● OTel | C#/Py/Java | MIT / 微软 | 高（Copilot 栈；.NET 新项目首选 MAF） |
-| **Spring AI** | ④企业 | ◐ ChatMemory/Advisor | ● | ◐（Alibaba 扩展强） | ◐ | ◐ OTel | Java | Apache-2.0 / 社区 | 高（2025-05 1.0 GA） |
-| LangChain4j | ④企业 | ◐ AiServices/记忆 | ● | ○ agentic 仍实验性 | ◐ | ◐ | Java | Apache-2.0 | 中高 |
-| Google ADK | ④企业 | ◐ session/event/resume(at-least-once) | ● | ● 层级/task delegation | ◐ | ● 内置 eval | Py/TS/Go/Java | Apache-2.0 / Google | 中高（2025；2.0 有破坏性变化） |
-| AWS Strands | ②/④ | ◐ 偏 loop | ● | ● multi-agent patterns | ◐ hooks | ● OTel | Py/TS | Apache-2.0 / AWS | 中（2025） |
-| Mastra | ②循环 | ● 内置 memory/workflow suspend | ● | ◐ harness | ● 工具审批 | ● 内置 | TS | Apache-2.0 | 中高（durable agent 仍 beta） |
-| Vercel AI SDK | ②循环 | ◐ WorkflowAgent 可持久恢复 | ● 规范化(抽象会泄漏) | ◐ HarnessAgent | ● 审批 | ● OTel | TS | Apache-2.0 / Vercel | 高（16M 周 DL） |
-| LlamaIndex Workflows | ①图 | ◐ 事件/checkpoint/DBOS | ● | ◐ AgentWorkflow | ◐ | ● OTel | Py/TS | MIT | 中高（转向文档处理） |
+| 框架                    | 哲学    | ①状态/记忆                                | ②模型无关           | ③多智能体                   | ④HITL                   | ⑤可观测            | ⑥语言           | ⑦许可/厂商                 | ⑧成熟度                        |
+| --------------------- | ----- | ------------------------------------- | --------------- | ----------------------- | ----------------------- | --------------- | ------------- | ---------------------- | --------------------------- |
+| **LangGraph**         | ①图    | ● checkpointer/store/interrupt        | ●               | ● supervisor            | ● interrupt/time-travel | ● LangSmith     | Py/JS         | MIT / LangChain        | 高（生产事实标杆）                   |
+| **OpenAI Agents SDK** | ②循环   | ◐ Sessions + 可序列化 RunState            | ◐* 高级特性锁 OpenAI | ● handoff/agent-as-tool | ● RunState 跨进程恢复        | ● 默认上送 OpenAI   | Py/JS         | MIT / OpenAI           | 高（2025-03）                  |
+| **Claude Agent SDK**  | ②循环   | ◐ session/hooks/checkpoint            | ○ 锁 Claude      | ● subagents             | ● 权限模式/hooks            | ● OTel          | Py/TS         | Apache-2.0 / Anthropic | 高（Claude Code 验证）           |
+| **Pydantic AI**       | ②循环   | ◐ Durable（接 Temporal/DBOS 等）          | ● 最广            | ◐ graph                 | ● 工具审批                  | ● Logfire(OTel) | Py            | MIT / Pydantic         | 高（2025-09 v1.0）             |
+| **CrewAI**            | ③多智能体 | ◐ Flow state/记忆                       | ●               | ● 角色 crew               | ◐                       | ●               | Py            | MIT(+企业) / CrewAI      | 中高                          |
+| **AutoGen / AG2**     | ③多智能体 | ◐ Redis/记忆                            | ●               | ● 会话 team               | ◐                       | ● OTel          | Py/.NET       | MIT→Apache / 社区        | 中（AutoGen 维护模式→MAF）         |
+| **Semantic Kernel**   | ④企业   | ◐ 记忆/Process                          | ●               | ◐ Agent                 | ◐ Process               | ● OTel          | C#/Py/Java    | MIT / 微软               | 高（Copilot 栈；.NET 新项目首选 MAF） |
+| **Spring AI**         | ④企业   | ◐ ChatMemory/Advisor                  | ●               | ◐（Alibaba 扩展强）          | ◐                       | ◐ OTel          | Java          | Apache-2.0 / 社区        | 高（2025-05 1.0 GA）           |
+| LangChain4j           | ④企业   | ◐ AiServices/记忆                       | ●               | ○ agentic 仍实验性          | ◐                       | ◐               | Java          | Apache-2.0             | 中高                          |
+| Google ADK            | ④企业   | ◐ session/event/resume(at-least-once) | ●               | ● 层级/task delegation    | ◐                       | ● 内置 eval       | Py/TS/Go/Java | Apache-2.0 / Google    | 中高（2025；2.0 有破坏性变化）         |
+| AWS Strands           | ②/④   | ◐ 偏 loop                              | ●               | ● multi-agent patterns  | ◐ hooks                 | ● OTel          | Py/TS         | Apache-2.0 / AWS       | 中（2025）                     |
+| Mastra                | ②循环   | ● 内置 memory/workflow suspend          | ●               | ◐ harness               | ● 工具审批                  | ● 内置            | TS            | Apache-2.0             | 中高（durable agent 仍 beta）    |
+| Vercel AI SDK         | ②循环   | ◐ WorkflowAgent 可持久恢复                 | ● 规范化(抽象会泄漏)    | ◐ HarnessAgent          | ● 审批                    | ● OTel          | TS            | Apache-2.0 / Vercel    | 高（16M 周 DL）                 |
+| LlamaIndex Workflows  | ①图    | ◐ 事件/checkpoint/DBOS                  | ●               | ◐ AgentWorkflow         | ◐                       | ● OTel          | Py/TS         | MIT                    | 中高（转向文档处理）                  |
 
 > `◐*`（OpenAI Agents SDK）：架构上声称 provider-agnostic，但 hosted tools（web/file search、code interpreter）、tool search、Responses 专属字段、默认 tracing 等高价值特性**只在 OpenAI 后端可用**，换非 OpenAI 模型会降级甚至报错。详见 4.2。
 
@@ -200,6 +204,7 @@ flowchart LR
 > 每个含：定位 / 架构图 / 取舍剖析 / 最小代码骨架 / 持久化与恢复 / 国内模型兼容 / 来源。
 
 ### 4.1 LangGraph —— 确定性图编排的事实标杆
+
 **定位**：LangChain 生态的低层、可控 Agent 运行时，把 Agent 表达为显式状态图，用 checkpointer 实现持久化、回放与人工卡点。*"Build reliable agents with low-level control."*（2024-01-17 发布）
 
 ```mermaid
@@ -218,6 +223,7 @@ flowchart LR
 **持久化与恢复**：checkpointer 保存线程内图状态，store 保存跨线程长期信息；interrupt/HITL、故障恢复、time travel、subgraph、流式事件一等公民。注意 **durable replay 不能替代副作用幂等**——任何可能被重放的工具都要用业务幂等键保护。
 
 **最小骨架**：
+
 ```python
 from langgraph.graph import StateGraph, END
 from typing import TypedDict
@@ -240,6 +246,7 @@ app = g.compile(checkpointer=memory)   # 持久化 → 可恢复/可回放
 **来源**：[LangGraph 发布](https://blog.langchain.dev/langgraph/)、[LangGraph 概览](https://docs.langchain.com/oss/python/langgraph/overview)、[持久化](https://docs.langchain.com/oss/python/langgraph/persistence)、[LangChain 博客](https://blog.langchain.dev/)。
 
 ### 4.2 OpenAI Agents SDK —— 厂商 agent 循环的开箱即用之选
+
 **定位**：OpenAI 2025-03-11 随 Responses API 发布的轻量多 Agent 框架（Swarm 的生产化升级）。原语：**Agents、Handoffs（含 agent-as-tool）、Guardrails、Sessions、Tracing**，并有 Realtime、sandbox agent。
 
 ```mermaid
@@ -257,6 +264,7 @@ flowchart TD
 **值得肯定**：概念少、Agent loop 与多 Agent delegation 上手快；HITL 可把 `RunState` 序列化后跨进程恢复，审批覆盖 handoff 与嵌套 agent-as-tool；OpenAI Responses/hosted tools/Realtime/tracing/sandbox 纵向集成顺畅。
 
 **最小骨架**：
+
 ```python
 from agents import Agent, Runner, function_tool
 
@@ -272,6 +280,7 @@ result = Runner.run_sync(triage, "帮我查北京天气")
 **来源**：[OpenAI Agents SDK 文档](https://openai.github.io/openai-agents-python/)、[发布博客](https://openai.com/index/new-tools-for-building-agents/)、[HITL](https://openai.github.io/openai-agents-python/human_in_the_loop/)。
 
 ### 4.3 Claude Agent SDK —— 极简循环 + 强模型 + MCP
+
 **定位**：Anthropic 的 Agent SDK，把"模型 ↔ 工具"循环做成一等公民；**Claude Code（本 CLI）即其旗舰参考实现**。哲学与 Anthropic《Building Effective Agents》极简主义一致。它把 Claude Code 的 Agent loop、上下文管理以及 Read/Edit/Bash/Glob/Grep/Web 等内置工具暴露给 Python/TypeScript，并提供 hooks、permissions、subagents、MCP、session、成本追踪与 OTel。
 
 ```mermaid
@@ -289,6 +298,7 @@ flowchart LR
 **注意**：这类 harness SDK 已对文件系统、命令执行、搜索和长视野任务做了大量产品化；编码/研究/运维助手可直接受益，普通客服或交易工作流若不需要这些能力，采用它会引入过大的权限面与 vendor/harness 绑定。
 
 **最小骨架（形态）**：
+
 ```typescript
 const agent = createAgent({
   systemPrompt: "...",
@@ -303,6 +313,7 @@ const result = await runAgent(agent, query); // 模型自主驱动工具循环
 **来源**：[Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview)、[Anthropic 工程博客](https://www.anthropic.com/engineering)。**注：SDK 精确文档路径与版本待落地复核。**
 
 ### 4.4 Pydantic AI —— 把 FastAPI 的"类型即文档"带到 Agent
+
 **定位**：Pydantic 团队出品，卖点是**全类型安全 + 依赖注入 + 结构化输出 + 最广模型无关性**。2025-09-05 v1.0（承诺 API 稳定到 v2），约 12.5K stars。
 
 ```mermaid
@@ -317,6 +328,7 @@ flowchart LR
 **取舍**：Pydantic 已是 OpenAI/Anthropic/Google/LangChain 等的共同校验底座，"从源头用起"。强类型把整类错误从运行时前移到编写时；DI 让工具/提示按请求注入；结构化输出失败自动重试；eval 与 OTel 是设计中的一等能力。代价：组合式 durable 意味着部署/版本/重试语义/可观测整合仍由团队负责；类型校验能阻止结构错误，不能证明内容正确或决策合理。
 
 **最小骨架**：
+
 ```python
 from pydantic_ai import Agent, RunContext
 from dataclasses import dataclass
@@ -339,6 +351,7 @@ result = agent.run_sync("查订单 123", deps=Deps(db))
 **来源**：[Pydantic AI](https://ai.pydantic.dev/)、[GitHub](https://github.com/pydantic/pydantic-ai)、[Durable Execution](https://ai.pydantic.dev/)。
 
 ### 4.5 CrewAI —— 角色分工多智能体，最直观的"AI 团队"
+
 **定位**：以**角色（role/goal/backstory）**为核心抽象的多智能体框架。Crew 装多个 Agent + Task，按 Process（sequential/hierarchical）执行；上层 Flow 做事件驱动编排。
 
 ```mermaid
@@ -355,6 +368,7 @@ flowchart TD
 **取舍**：把"团队分工"隐喻直接代码化，开发体感最友好、上手快，适合快速构建研究/内容/销售运营等"角色天然可理解"的自动化。但角色/backstory/delegation 容易**掩盖真正的控制流**——高风险系统应把关键路径落到 Flow 和普通 Python，而非自由协商。企业级 tracing/治理/控制面要评估 AMP 商业产品边界。要正视多智能体类别共性（见 2.3、第 9 节）。
 
 **最小骨架**：
+
 ```python
 from crewai import Agent, Task, Crew, Process
 
@@ -370,6 +384,7 @@ result = crew.kickoff()
 **来源**：[CrewAI 文档](https://docs.crewai.com/)、[GitHub](https://github.com/crewAIInc/crewAI)。
 
 ### 4.6 Semantic Kernel —— 微软系企业插件内核（.NET 新项目首选 MAF）
+
 **定位**：微软企业级 AI 编排 SDK，**插件（Plugin）+ 依赖注入**为核心，是 Microsoft Copilot 技术栈基础之一。多语言（C#/.NET 为主，Python、Java）。
 
 ```mermaid
@@ -388,6 +403,7 @@ flowchart LR
 **重要（2026 现状）**：微软已把 AutoGen 转入**维护模式**，押注新继任 **Microsoft Agent Framework (MAF)**（Python + .NET，graph workflow + checkpoint + HITL + time travel + OTel + Foundry hosting，含 AutoGen/SK 迁移指南）。**.NET/Azure 新项目优先 MAF**；已有 SK/AutoGen 项目评估迁移成本，不必为追新立即重写。SK 仍是 Copilot 栈与跨语言（含 Java）的现实选项，但新 .NET Agent 项目不必再把它当第一候选。
 
 **最小骨架（C# 形态）**：
+
 ```csharp
 var builder = Kernel.CreateBuilder();
 builder.AddOpenAIChatCompletion("gpt-4o", apiKey);
@@ -400,6 +416,7 @@ var answer = await kernel.InvokePromptAsync("现在几点？用工具");
 **来源**：[Semantic Kernel](https://github.com/microsoft/semantic-kernel)、[Microsoft Agent Framework](https://github.com/microsoft/agent-framework)、[AutoGen（维护模式）](https://github.com/microsoft/autogen)、[微软学习](https://learn.microsoft.com/semantic-kernel/)。
 
 ### 4.7 Spring AI —— JVM 生态的 Agent 框架（含 Alibaba 扩展）
+
 **定位**：Spring 原生 Java AI 应用框架，把 Spring 工程范式（自动配置、DI、Advisor 拦截链）带到 LLM 应用。2025-05-20 **1.0.0 GA**。阿里 **Spring AI Alibaba** 在其上扩展多 Agent 编排（Graph 运行时、Sequential/Parallel/Routing/LoopAgent）、MCP、A2A，是国内 JVM 团队关键选项。
 
 ```mermaid
@@ -417,6 +434,7 @@ flowchart TD
 **版本对应**：Spring AI 2.x ↔ Spring Boot 4.x；Spring AI 1.1.x ↔ Boot 3.5.x——**不能脱离现有 Boot 基线选版本**。
 
 **最小骨架（Alibaba 多 Agent 形态）**：
+
 ```java
 // spring-ai-alibaba-starter-dashscope + graph 运行时
 // 通过 OpenAI 兼容 starter 亦可接 DeepSeek 等
@@ -483,6 +501,7 @@ var result = agent.execute(query);   // 持久化、流式、HITL 由 Graph 运�
 ## 7. 选型方法：复杂度分级 → 一票否决 → 决策树
 
 ### 7.1 先按复杂度分级
+
 在比较框架前，先判断业务落在哪一级——多数应用停在 L1/L2，只有真实存在执行时间/故障恢复/组织边界时才进入 L3/L4。
 
 | 级别 | 典型形态 | 应采用的最小方案 | 不应提前引入 |
@@ -494,6 +513,7 @@ var result = agent.execute(query);   // 持久化、流式、HITL 由 Graph 运�
 | L4 | 跨团队/跨服务的 Agent 协作 | 稳定契约 + A2A/API + 独立身份与审计 | 同进程中为了"角色感"拆服务 |
 
 ### 7.2 一票否决问题（打分前先过）
+
 任何"不满足"都应直接淘汰候选，而不是用总分补偿：
 
 1. **主语言与运行环境是什么？** 是否允许新增 Python/Node 运行时？团队能否承担其发布、监控和安全基线？
@@ -555,6 +575,7 @@ flowchart TD
 协议是互操作边界，不是 Agent 框架的替代。采用协议的前提是真实存在跨边界，不要把协议本身当成架构目标。
 
 ### 8.1 MCP：工具接入协议
+
 MCP（Anthropic 2024-11-25 发起）已成事实标准：万级公开服务、近亿月下载、Linux Foundation 旗下 Agentic AI Foundation 治理，OpenAI/Google/Microsoft/GitHub/Mistral 先后采纳。它适合让多个 Agent 客户端复用同一工具/资源服务，或隔离不同语言与发布周期；**不提供业务工作流、事务、Agent memory 或任务恢复**。
 
 不建议"所有内部函数都 MCP 化"。同进程、单消费者、低延迟的普通函数工具更简单。只有在工具需独立部署、多客户端复用、权限隔离或跨语言时，再承担协议、网络和鉴权成本。
@@ -562,9 +583,11 @@ MCP（Anthropic 2024-11-25 发起）已成事实标准：万级公开服务、�
 **MCP 是新的安全边界**。官方安全规范明确讨论 confused deputy、token passthrough、SSRF、redirect URI 和 OAuth state 等风险，并禁止把并非签发给 MCP server 的 token 直接向下游透传。2026 的批评也成熟：**提示注入（"lethal trifecta"）、上下文 token 税**。共识收敛为"MCP 应是薄的认证/安全网关，而非抽象层"。
 
 ### 8.2 A2A：远程 Agent 协作协议
+
 A2A 适合跨服务/跨团队/跨组织发现与调用 Agent，并传递长任务状态。它不适合同一进程中本可用函数调用完成的 agent-as-tool。采用前提是每个 Agent 有**独立身份、SLA、版本、权限和审计**需求。Google ADK 把 A2A 作为一等能力。
 
 ### 8.3 AG-UI 与 UI 流协议
+
 AG-UI 一类协议解决 Agent 到前端的事件流、工具状态、共享状态和人机交互。它**不负责后端 durable execution**。前后端可分别选型，通过稳定事件契约连接，不必用同一框架。
 
 ---
@@ -588,6 +611,7 @@ AG-UI 一类协议解决 Agent 到前端的事件流、工具状态、共享状�
 ## 10. 生产参考架构与落地风险
 
 ### 10.1 状态必须分开
+
 至少区分四类状态：
 
 | 状态 | 例子 | 权威存储 | 生命周期 |
@@ -600,7 +624,9 @@ AG-UI 一类协议解决 Agent 到前端的事件流、工具状态、共享状�
 向量库只是长期 memory 的一种检索手段，**不是业务事实源**。模型生成的 memory 进入长期存储前应有来源、租户、时间、置信度和删除策略。
 
 ### 10.2 工具网关
+
 所有产生副作用的工具建议经统一网关：
+
 ```text
 模型工具调用
    -> schema 校验
@@ -611,23 +637,29 @@ AG-UI 一类协议解决 Agent 到前端的事件流、工具状态、共享状�
    -> domain service
    -> 审计事件与脱敏结果
 ```
+
 工具设计：一个工具表达一个清晰意图；查询/写入工具分开，写入默认最小权限；返回结构小而稳定，大结果存为引用；所有外部副作用支持幂等/超时/重试分类/可观测；**不把数据库连接、API key 或异常堆栈放入模型上下文**；对 shell/浏览器/文件系统/代码执行用真正 sandbox 与网络策略。
 
 ### 10.3 Durable execution 的语义
+
 "可恢复"通常意味着步骤可能被重放，**不是 exactly-once**（Google ADK resume 明确 at-least-once）。因此：① 每次 run/step/tool call 有稳定 ID；② 写工具接收业务幂等键；③ checkpoint 在副作用前后有明确边界；④ 超时后标记"未知"而非直接当失败重试；⑤ 需要时用 outbox/fencing token/补偿；⑥ 暂停任务同时保存 agent/prompt/tool schema 版本，避免新代码恢复旧状态。
 
 ### 10.4 可观测与评测
+
 生产 trace 至少含：`run_id`/`session_id`/tenant/用户/请求来源；model/provider/version、prompt 版本、temperature；每步输入输出摘要、tool call、审批、重试、异常、结束原因；token、缓存命中、耗时、成本；checkpoint/resume/取消/重复；最终业务结果与用户反馈。**优先让框架导出 OpenTelemetry**，再接现有平台（OTel 已有 GenAI 语义约定但仍在演进，内部字段保留扩展空间）。
 
 评测不能只看最终文本，至少覆盖：task success/business outcome；工具选择与参数正确率、非法动作率；轨迹长度、无效循环、handoff/route 正确率；groundedness、引用质量、结构化输出有效率；人工接管率与审批拒绝率；p50/p95 延迟、token、成本、超时率；重启恢复、重复消息、provider 降级；越权、prompt injection、跨租户与数据泄漏测试。
 
 ### 10.5 预算与结束条件
+
 每次 run 必须同时设：最大模型调用次数；最大工具调用次数和单工具次数；最大墙钟时间；最大 token/成本；最大并发 subagent 数；可重试错误清单和最大重试；**明确的 success/partial/failed/cancelled/expired 终态**。"模型自己判断已经完成"不能成为唯一结束条件。
 
 ### 10.6 模型访问与厂商锁定（国内首要约束）
+
 OpenAI/Anthropic 直连受限。务实路径——用 DeepSeek/通义/豆包/GLM 的 **OpenAI 兼容端点** + 模型无关框架；或经 **LiteLLM/OpenRouter** 模型路由网关统一收口（LiteLLM：100+ provider、成本/延迟路由、fallback、冷却，自称 8ms P95@1k RPS）。厂商 SDK（OpenAI Agents SDK 的 hosted tools/Responses/tracing、Claude Agent SDK 的模型绑定）在国内模型上会降级——**这往往直接决定选型**。
 
 锁定成本：切换 provider 时，结构化输出、工具流、推理控制等**抽象会泄漏**（Vercel AI SDK 自己承认）。降低锁定的做法是把框架限制在 application/orchestration 层，保留稳定边界：
+
 ```text
 ModelGateway       # 只统一真正可统一的调用；供应商高级能力保留 escape hatch
 ToolGateway        # 普通业务接口、JSON Schema、身份与幂等
@@ -636,12 +668,15 @@ PolicyEngine       # 权限、审批、预算、数据分类
 EventSink          # 统一运行事件与 OTel
 EvaluationPort     # dataset、evaluator、结果版本
 ```
+
 迁移友好实践：prompt/tool schema/eval dataset/policy 独立版本化；工具实现是普通可测试函数，框架 decorator 只做薄适配；保存必要原始 provider event 同时输出规范化事件；不让框架 message/session 对象直接成为业务数据库模型；每季度用 challenger 重放核心 dataset 监控替换成本与能力漂移。
 
 ### 10.7 Java 技术栈专项结论
+
 Java 团队不应因 Python Agent 生态更丰富就把所有 AI 业务迁到 Python——先判断 AI 逻辑是否需要独立团队、独立扩缩容和独立发布，否则保留 Spring Boot 业务边界通常更省成本。
 
 推荐分层：
+
 ```text
 Spring MVC/WebFlux API
         |
@@ -656,6 +691,7 @@ Spring AI：model/tool/MCP/RAG            |
         |
 普通 Spring Domain Service + 数据库
 ```
+
 原则：tool 只调用已有 application/domain service，不在 tool callback 中复制业务规则；Spring 事务不跨 LLM 调用或人工等待长期持有；Agent run state 与业务权威状态分库或至少分 schema；用幂等键把"模型重复调用"降级为可识别的重复请求。
 
 | 场景 | 优先候选 | 说明 |
@@ -671,9 +707,11 @@ Spring AI：model/tool/MCP/RAG            |
 ## 11. 两阶段 PoC 与评分门禁
 
 ### 11.1 阶段一：一票否决验证（相同代码边界）
+
 对每个候选用相同边界完成：① 对接两个目标模型，验证工具调用/结构化输出/流/错误语义；② 实现一个读工具、一个幂等写工具、一个需人工审批的工具；③ 运行到中途杀进程，重启恢复；④ 在工具完成但结果未写回时制造超时，验证不重复产生副作用；⑤ 模拟 provider 429/5xx、超时、无效 tool args、上下文超限；⑥ 验证 tenant/credential/trace/checkpoint 的隔离与脱敏；⑦ 升级一个小版本，验证旧 session/checkpoint 可读；⑧ 导出 OTel trace，确认能关联最终业务结果。**任何候选在必须能力上失败就不进入打分。**
 
 ### 11.2 阶段二：加权评分（按项目调权，非固定总分）
+
 | 维度 | 普通 SaaS Agent | 长运行 Agent | 说明 |
 | --- | ---: | ---: | --- |
 | 正确性与可控性 | 20 | 20 | 轨迹、结构化输出、非法动作 |
@@ -687,11 +725,13 @@ Spring AI：model/tool/MCP/RAG            |
 | **合计** | **100** | **100** | 先过硬门禁，再比总分 |
 
 ### 11.3 数据集与统计
+
 建立 50～200 条代表性离线 case（正常/边界/对抗/失败）；非确定性任务多次运行，报告均值、分位数和失败分布，不只展示最好结果；**LLM-as-judge 只能补充**，不应单独决定涉及业务事实或安全的通过/失败；对每次框架/模型/prompt/tool schema 变更跑回归；先选一个 champion 和一个 challenger，避免长期维护三套 PoC。
 
 ---
 
 ## 12. 常见误区
+
 1. **按 GitHub star 选框架。** star 反映关注度，不证明恢复语义、兼容性和生产治理。
 2. **把 memory 当数据库。** memory 是模型上下文策略；业务事实必须回到权威存储。
 3. **宣称 provider-agnostic 就能无损换模型。** tool calling、推理、缓存、内置搜索、实时音频和内容过滤都存在语义差异。
@@ -708,6 +748,7 @@ Spring AI：model/tool/MCP/RAG            |
 ## 13. 最终建议
 
 对没有额外上下文的新项目，采用以下默认决策顺序：
+
 ```text
 1. 单次调用/RAG 能否满足？
    能 -> 模型 SDK + schema + eval，结束。          不能 -> 进入 2。
@@ -726,6 +767,7 @@ Spring AI：model/tool/MCP/RAG            |
 ```
 
 按栈的通用起点：
+
 - **Python 新项目**：简单/中等复杂度先用 **Pydantic AI**；明确需要复杂长运行图时直接 **LangGraph**。
 - **TypeScript 新项目**：UI 和轻 Agent 用 **Vercel AI SDK**；完整 Agent 后端用 **Mastra**；长任务从第一天验证 durable 路线。
 - **Java 新项目**：先用 **Spring AI** 接入模型与工具，复杂编排再评估 **Spring AI Alibaba / ADK**，不把实验性 agentic 模块直接放到高风险主链路。
@@ -741,6 +783,7 @@ Spring AI：model/tool/MCP/RAG            |
 ## 参考资料（一手来源）
 
 **厂商 SDK / 运行时**
+
 - OpenAI, *New tools for building agents*（2025-03-11）：https://openai.com/index/new-tools-for-building-agents/
 - OpenAI Agents SDK 文档：https://openai.github.io/openai-agents-python/ （HITL：https://openai.github.io/openai-agents-python/human_in_the_loop/）
 - Pydantic AI：https://ai.pydantic.dev/ （GitHub：https://github.com/pydantic/pydantic-ai ；Durable Execution 文档同站）
@@ -758,12 +801,14 @@ Spring AI：model/tool/MCP/RAG            |
 - Claude Agent SDK：https://code.claude.com/docs/en/agent-sdk/overview ；Anthropic 工程：https://www.anthropic.com/engineering
 
 **AutoGen / AG2 / MAF 演进**
+
 - Microsoft Research, *AutoGen v0.4*（2025-01-14）：https://www.microsoft.com/en-us/research/blog/autogen-v0-4-reimagining-the-foundation-of-agentic-ai-for-scale-extensibility-and-robustness/
 - AutoGen（维护模式）：https://github.com/microsoft/autogen
 - Microsoft Agent Framework（继任）：https://github.com/microsoft/agent-framework
 - AG2（原创始人 fork，Apache-2.0）：https://github.com/ag2ai/ag2
 
 **趋势与争论**
+
 - Anthropic, *Building Effective Agents*（2024-12-19）：https://www.anthropic.com/engineering/building-effective-agents
 - Anthropic, *How we built our multi-agent research system*（2025-06-13）：https://www.anthropic.com/engineering/multi-agent-research-system
 - Cognition (W. Yan), *Don't Build Multi-Agents*（2025-06）：https://www.cognition.ai/blog/dont-build-multi-agents
@@ -773,6 +818,7 @@ Spring AI：model/tool/MCP/RAG            |
 - Latent Space, *AI Engineering World's Fair 2026 Trends*（2026-07-14）：https://www.latent.space/p/aiewf26trends
 
 **MCP / A2A / AG-UI / 可观测**
+
 - Anthropic, *Introducing the Model Context Protocol*（2024-11-25）：https://www.anthropic.com/news/model-context-protocol
 - MCP 官网与安全规范：https://modelcontextprotocol.io/ ；https://modelcontextprotocol.io/specification/latest/basic/security_best_practices
 - MCP 采纳统计（Digital Applied）：https://www.digitalapplied.com/blog/mcp-adoption-statistics-2026-model-context-protocol
@@ -781,18 +827,22 @@ Spring AI：model/tool/MCP/RAG            |
 - OpenTelemetry GenAI 语义约定：https://opentelemetry.io/docs/specs/semconv/gen-ai/
 
 **L1 / RAG 转向**
+
 - LlamaIndex 博客（RAG→Agentic Document Processing；Workflows）：https://www.llamaindex.ai/blog ；https://developers.llamaindex.ai/python/llamaagents/workflows/
 
 **模型路由 / 网关**
+
 - LiteLLM：https://github.com/BerriAI/litellm ；文档：https://docs.litellm.ai/
 
 **国内生态**
+
 - 阿里百炼 OpenAI 兼容：https://help.aliyun.com/zh/model-studio/compatibility-of-openai-with-dashscope
 - 火山方舟大模型服务平台：https://www.volcengine.com/docs/82379/1099455
 - DeepSeek API 文档：https://api-docs.deepseek.com/ ；Function Calling：https://api-docs.deepseek.com/guides/function_calling/
 - Qwen-Agent：https://github.com/QwenLM/Qwen-Agent
 
 **基础设施**
+
 - LangSmith：https://smith.langchain.com/ ；Langfuse：https://langfuse.com/
 - Mem0：https://docs.mem0.ai/ ；Letta：https://docs.letta.com/ ；Zep：https://docs.getzep.com/
 
